@@ -53,7 +53,7 @@ def generate_meta(tree):
     meta = E("meta")
     
     meta.append(generate_identification(tree))
-    
+    meta.append(generate_publication(tree))
     meta.append(generate_lifecycle(tree))
     '''
     generate_analysis(tree)
@@ -163,13 +163,14 @@ def generate_references(tree):
         references.append(committee)
     return references
 
-'''
+
 def generate_publication(tree):
-    date =
-    name = 
-    publication = 
-    id = 
-'''
+    id = 'publication'
+    date = get_sunlight('last_version_on', bill_id)['results'][0]['last_version_on']
+    name = 'http://www.gpo.gov'
+    publication_element = E('publication', date=date, name=name)
+    return publication_element
+
 
 def generate_lifecycle(tree):
     source = "nick_fazzio"
