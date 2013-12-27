@@ -158,6 +158,8 @@ def generate_references(tree):
     references.append(get_sponsor(tree))
     for sponsor in get_cosponsors(tree):
         references.append(sponsor)
+    for committee in get_committees(tree):
+        references.append(committee)
     return references
 '''
 def generate_publication():
@@ -170,12 +172,6 @@ def get_sponsor(tree):
     sponsor_text = tree.find('.//sponsor').text
     sponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<sponsor>[a-zA-Z]*)', sponsor_text).group('sponsor')
     ontology_path = '/ontology/person/akn/' + sponsor_name
-    attributes = {
-        'id': sponsor_name,
-        'href': ontology_path,
-        'showas': sponsor_name
-    }
-    #sponsor_element = make_tlc_element('TLCPerson', sponsor_name, ontology_path, sponsor_name)
     sponsor_element = E('TLCPerson', id=sponsor_name, href=ontology_path, showas=sponsor_name)
     return sponsor_element
 
@@ -183,14 +179,24 @@ def get_cosponsors(tree):
     """Returns a list of etree elements with containing TLCPerson tag with co sponsor information"""
     cosponsors = []
     cosponsor_matches = tree.findall('.//cosponsor')
-    for cosponsor_text in cosponsor_matches:
-        print cosponsor_text
     for cosponsor_match in cosponsor_matches:
         cosponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<cosponsor>[a-zA-Z]*)', cosponsor_match.text).group('cosponsor')
         ontology_path = '/ontology/person/akn/' + cosponsor_name
         cosponsor_element = E('TLCPerson', id=cosponsor_name, href=ontology_path, showas=cosponsor_name)
         cosponsors.append(cosponsor_element)
     return cosponsors
+
+def get_committees(tree):
+    committees = []
+    committee_matches = tree.findall('.//committee-name')
+    for committee in committee_matches:
+        committee_name = committee.text
+        committee_id = committee.get("committee-id")
+        ontology_path = '/ontology/organization/akn/' + committee_name.replace(' ', '_')
+        committee_element = E('TLCOrganization', id=committee_id, href=ontology_path, showas=committee_name)
+        committees.append(committee_element)
+    return committees
+
 
 def getFromDict(dataDict, mapList):
     """Retrieves nested values from a dictionary"""
