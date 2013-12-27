@@ -15,7 +15,6 @@ bill_id = ("hr4310-112")
 
 def main(argv):
     bill_id = argv
-    print bill_id
     url = "http://www.gpo.gov/fdsys/pkg/BILLS-113hr1120rh/xml/BILLS-113hr1120rh.xml"
     
     source_tree = get_tree_from_url(url)
@@ -28,8 +27,6 @@ def get_sunlight(parameters,bill_id):
     url = 'http://congress.api.sunlightfoundation.com/bills'
     header = {'X-APIKEY':api_key}
     fields = {'fields':parameters, 'bill_id':bill_id}
-    print header
-    print fields
     json_response = requests.request('get', url, headers=header, data=fields).json()
 
     return json_response
@@ -39,6 +36,7 @@ def get_tree_from_url(url):
     xml = urllib2.urlopen(url)
     parser = etree.XMLParser(remove_blank_text=True)
     tree = etree.parse(xml, parser)
+    print etree.tostring(tree, pretty_print=True)
     return tree
 
 def generate_akn(tree):
@@ -55,9 +53,8 @@ def generate_meta(tree):
     meta.append(generate_identification(tree))
     meta.append(generate_publication(tree))
     meta.append(generate_lifecycle(tree))
-    '''
-    generate_analysis(tree)
-    '''
+    meta.append(generate_analysis(tree))
+
     meta.append(generate_references(tree))
     return meta
     
@@ -183,9 +180,26 @@ def generate_eventRef(tree):
     action_date = time.strftime("%Y-%m-%d")
     source = "nick_fazzio"
     refers = generate_frbr_manifestation(tree).getchildren()[1].get('value')
-    print refers
     eventref_element = E('eventRef', date=action_date, source=source, refers=refers)
     return eventref_element
+
+def generate_analysis(tree):
+    source = "nick_fazzio"
+    analysis_element = E("analysis", source=source)
+    analysis_element.append(generate_active_modification(tree))
+    return analysis_element
+
+def generate_active_modification(tree):
+    active_modification_element = E("activeModification")
+    if tree.xpath("//*[@*='strikethrough']"):
+        active_modification_element.append(generate_textual_mod(tree, 'deletion'))
+    if tree.xpath("//*[@*='italic']"):
+        active_modification_element.append(generate_textual_mod(tree, 'insertion'))
+    return active_modification_element
+
+def generate_textual_mod(tree, type):
+    textual_mod_element = E("textualMod",type=type)
+    return textual_mod_element
 
 def get_sponsor(tree):
     """Returns an etree element containing TLCPerson tag with sponsor information"""
