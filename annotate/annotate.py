@@ -7,6 +7,7 @@ import argparse
 import sys
 import string
 import requests
+import time
 
 api_url='http://congress.api.sunlightfoundation.com/bills?'
 api_key= open('api_key.txt').read().rstrip()
@@ -63,13 +64,12 @@ def generate_meta(tree):
 def generate_identification(tree):
     """Generates the identification portion of the meta"""
     identification = E("identification")
-
-    for element in generate_frbr_work(tree):
-        identification.append(element)
-    '''
-    identification.append(generate_frbr_expression)
-    identification.append(generate_frbr_manifestation)
-    '''
+    identification.append(generate_frbr_work(tree))
+    #for element in generate_frbr_work(tree):
+    #   identification.append(element)
+    
+    identification.append(generate_frbr_expression(tree))
+    identification.append(generate_frbr_manifestation(tree))
     return identification
 
 
@@ -87,21 +87,17 @@ def generate_frbr_work(tree):
     country = 'us'
     state = 'house'
     item = 'bill'
-    #The "introduced on" date represents the original work's date
-    date = get_sunlight('introduced_on', bill_id)['results'][0]['introduced_on']
-    print date
-    bill_number = get_bill_number(tree)
-
+    #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
+    date_introduced = get_sunlight('introduced_on', bill_id)['results'][0]['introduced_on']
     frbr_work = E("FRBRWork")
-    this = E("FRBRthis", value=string.join([country, state, item, date, bill_id, 'main'],"/"))
-    frbr_work.append(this)
-    frbr_work.append(E("FRBRuri"))
-    frbr_work.append(E("FRBRdate"))
-    frbr_work.append(E("FRBRauthor"))
-    frbr_work.append(E("FRBRcountry"))
+    frbr_work.append(E("FRBRthis", value=string.join([country, state, item, date_introduced, bill_id, 'main'],"/")))
+    frbr_work.append(E("FRBRuri", value=string.join([country, state, item, date_introduced, bill_id],"/")))
+    frbr_work.append(E("FRBRdate", date=date_introduced, name='introduced'))
+    frbr_work.append(E("FRBRauthor", author=get_sponsor(tree).get("id")))
+    frbr_work.append(E("FRBRcountry", value=country))
     return frbr_work
 
-
+'''
 def get_bill_number(tree):
     """returns the bill's number"""
     #TODO legis-num
@@ -111,10 +107,51 @@ def get_bill_number(tree):
 
     return bill_num
 '''
+
 def generate_frbr_expression(tree):
+    """Generates the FRBRExpression portion of the identification"""
+    '''
+    EXAMPLE:
+    <FRBRthis value="/us/california/bill/2010-12-06/4/eng@/main"/>
+    <FRBRuri value="/us/california/bill/2010-12-06/4/eng@"/>
+    <FRBRdate date="2010-12-06" name="Expression"/>
+    <FRBRauthor href="#somebody" as="#editor"/>
+    <FRBRlanguage language="eng"/>
+    '''
+    country = 'us'
+    state = 'house'
+    item = 'bill'
+    #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
+    last_action = get_sunlight('last_action', bill_id)['results'][0]['last_action']['acted_at']
+    frbr_expression = E("FRBRExpression")
+    frbr_expression.append(E("FRBRthis", value=string.join([country, state, item, last_action, bill_id, 'eng@', 'main'],"/")))
+    frbr_expression.append(E("FRBRuri", value=string.join([country, state, item, last_action, bill_id, 'eng@'],"/")))
+    frbr_expression.append(E("FRBRdate", date=last_action, name='last_action'))
+    frbr_expression.append(E("FRBRauthor", author='#authors'))
+    frbr_expression.append(E("FRBRlanguage", language='eng'))
+    return frbr_expression
+
 
 def generate_frbr_manifestation(tree):
-'''
+
+    '''
+    <FRBRthis value="/us/california/bill/2010-12-06/4/eng@/main.xml"/>
+    <FRBRuri value="/us/california/bill/2010-12-06/4/eng@/main.akn"/>
+    <FRBRdate date="2010-12-06" name="XML-markup"/>
+    <FRBRauthor href="#somebody" as="#editor"/>
+    '''
+    country = 'us'
+    state = 'house'
+    item = 'bill'
+    #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
+    date_accessed = time.strftime("%Y/%m/%d")
+    frbr_manifestation = E("FRBRmanifestation")
+    frbr_manifestation.append(E("FRBRthis", value=string.join([country, state, item, date_accessed, bill_id, 'eng@', 'main.xml'],"/")))
+    frbr_manifestation.append(E("FRBRuri", value=string.join([country, state, item, date_accessed, bill_id, 'eng@', 'main.akn'],"/")))
+    frbr_manifestation.append(E("FRBRdate", date=date_accessed, name='accessed'))
+    frbr_manifestation.append(E("FRBRauthor", author='#authors'))
+    return frbr_manifestation
+
 def generate_references(tree):
     """Returns the references portion of the meta"""
     references = E('references', source='#somebody')
