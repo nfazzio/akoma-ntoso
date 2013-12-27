@@ -123,11 +123,11 @@ def generate_frbr_expression(tree):
     state = 'house'
     item = 'bill'
     #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
-    last_action = get_sunlight('last_action', bill_id)['results'][0]['last_action']['acted_at']
+    last_version = get_sunlight('last_version_on', bill_id)['results'][0]['last_version_on']
     frbr_expression = E("FRBRExpression")
-    frbr_expression.append(E("FRBRthis", value=string.join([country, state, item, last_action, bill_id, 'eng@', 'main'],"/")))
-    frbr_expression.append(E("FRBRuri", value=string.join([country, state, item, last_action, bill_id, 'eng@'],"/")))
-    frbr_expression.append(E("FRBRdate", date=last_action, name='last_action'))
+    frbr_expression.append(E("FRBRthis", value=string.join([country, state, item, last_version, bill_id, 'eng@', 'main'],"/")))
+    frbr_expression.append(E("FRBRuri", value=string.join([country, state, item, last_version, bill_id, 'eng@'],"/")))
+    frbr_expression.append(E("FRBRdate", date=last_version, name='last_action'))
     frbr_expression.append(E("FRBRauthor", author='#authors'))
     frbr_expression.append(E("FRBRlanguage", language='eng'))
     return frbr_expression
@@ -165,6 +165,10 @@ def generate_references(tree):
 
 '''
 def generate_publication(tree):
+    date =
+    name = 
+    publication = 
+    id = 
 '''
 
 def generate_lifecycle(tree):
