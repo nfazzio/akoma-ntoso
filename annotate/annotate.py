@@ -43,7 +43,7 @@ def get_tree_from_url(url):
 
 def generate_akn(tree):
     """Take in an lxml tree and returns xml fitting akomaNtoso standards"""
-    root = E('akomaNtosos', xmlns='http://docs.oasis-open.org/legaldocml/ns/akn/3.0/CSD05')
+    root = E('akomaNtosos', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
     root.append(generate_meta(tree))
 
     return root
@@ -53,8 +53,9 @@ def generate_meta(tree):
     meta = E("meta")
     
     meta.append(generate_identification(tree))
+    
+    meta.append(generate_lifecycle(tree))
     '''
-    generate_lifecycle(tree)
     generate_analysis(tree)
     '''
     meta.append(generate_references(tree))
@@ -144,7 +145,7 @@ def generate_frbr_manifestation(tree):
     state = 'house'
     item = 'bill'
     #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
-    date_accessed = time.strftime("%Y/%m/%d")
+    date_accessed = time.strftime("%Y-%m-%d")
     frbr_manifestation = E("FRBRmanifestation")
     frbr_manifestation.append(E("FRBRthis", value=string.join([country, state, item, date_accessed, bill_id, 'eng@', 'main.xml'],"/")))
     frbr_manifestation.append(E("FRBRuri", value=string.join([country, state, item, date_accessed, bill_id, 'eng@', 'main.akn'],"/")))
@@ -161,11 +162,25 @@ def generate_references(tree):
     for committee in get_committees(tree):
         references.append(committee)
     return references
-'''
-def generate_publication():
 
-def generate_lifecycle():
 '''
+def generate_publication(tree):
+'''
+
+def generate_lifecycle(tree):
+    source = "nick_fazzio"
+    lifecycle_element = E("lifecycle", source=source)
+    lifecycle_element.append(generate_eventRef(tree))
+    return lifecycle_element
+        
+
+def generate_eventRef(tree):
+    action_date = time.strftime("%Y-%m-%d")
+    source = "nick_fazzio"
+    refers = generate_frbr_manifestation(tree).getchildren()[1].get('value')
+    print refers
+    eventref_element = E('eventRef', date=action_date, source=source, refers=refers)
+    return eventref_element
 
 def get_sponsor(tree):
     """Returns an etree element containing TLCPerson tag with sponsor information"""
@@ -182,7 +197,8 @@ def get_cosponsors(tree):
     for cosponsor_match in cosponsor_matches:
         cosponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<cosponsor>[a-zA-Z]*)', cosponsor_match.text).group('cosponsor')
         ontology_path = '/ontology/person/akn/' + cosponsor_name
-        cosponsor_element = E('TLCPerson', id=cosponsor_name, href=ontology_path, showas=cosponsor_name)
+        cosponsor_id = cosponsor_match.get('name-id')
+        cosponsor_element = E('TLCPerson', id=cosponsor_id, href=ontology_path, showas=cosponsor_name)
         cosponsors.append(cosponsor_element)
     return cosponsors
 
@@ -191,7 +207,7 @@ def get_committees(tree):
     committee_matches = tree.findall('.//committee-name')
     for committee in committee_matches:
         committee_name = committee.text
-        committee_id = committee.get("committee-id")
+        committee_id = committee.get('committee-id')
         ontology_path = '/ontology/organization/akn/' + committee_name.replace(' ', '_')
         committee_element = E('TLCOrganization', id=committee_id, href=ontology_path, showas=committee_name)
         committees.append(committee_element)
