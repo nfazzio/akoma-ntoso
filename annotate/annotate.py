@@ -43,8 +43,15 @@ def generate_akn(tree):
     """Take in an lxml tree and returns xml fitting akomaNtoso standards"""
     root = E('akomaNtosos', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
     root.append(generate_meta(tree))
-
+    '''
+    root.append(generate_coverpage(tree))
+    '''
+    root.append(generate_preamble(tree))
     return root
+
+############################
+# Methods to Generate Meta #
+############################
 
 def generate_meta(tree):
     """Generates the meta portion of the xml"""
@@ -191,9 +198,9 @@ def generate_analysis(tree):
 
 def generate_active_modification(tree):
     active_modification_element = E("activeModification")
-    if tree.xpath("//*[@*='strikethrough']"):
+    if tree.xpath("//*[@changed='deleted']"):
         active_modification_element.append(generate_textual_mod(tree, 'deletion'))
-    if tree.xpath("//*[@*='italic']"):
+    if tree.xpath("//*[@changed='added']"):
         active_modification_element.append(generate_textual_mod(tree, 'insertion'))
     return active_modification_element
 
@@ -203,10 +210,11 @@ def generate_textual_mod(tree, type):
 
 def get_sponsor(tree):
     """Returns an etree element containing TLCPerson tag with sponsor information"""
-    sponsor_text = tree.find('.//sponsor').text
-    sponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<sponsor>[a-zA-Z]*)', sponsor_text).group('sponsor')
+    sponsor = tree.find('.//sponsor')
+    sponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<sponsor>[a-zA-Z]*)', sponsor.text).group('sponsor')
     ontology_path = '/ontology/person/akn/' + sponsor_name
-    sponsor_element = E('TLCPerson', id=sponsor_name, href=ontology_path, showas=sponsor_name)
+    sponsor_id = sponsor.get('name-id')
+    sponsor_element = E('TLCPerson', id=sponsor_id, href=ontology_path, showas=sponsor_name)
     return sponsor_element
 
 def get_cosponsors(tree):
@@ -232,10 +240,27 @@ def get_committees(tree):
         committees.append(committee_element)
     return committees
 
+###############################
+# Methods to Generate Preface #
+###############################
 
-def getFromDict(dataDict, mapList):
-    """Retrieves nested values from a dictionary"""
-    return reduce(lambda d, k: d[k], mapList, dataDict)
+
+################################
+# Methods to Generate Preamble #
+################################
+
+def generate_preamble(tree):
+    preamble_element = E('preamble')
+    preamble_element.append(generate_container(tree))
+    return preamble_element
+
+def generate_container(tree):
+    container_element = E('container', id='cnt1', name='motivation')
+    return container_element
+
+############################
+# Methods to Generate Body #
+############################
 
 def set_up_parser():
     parser = argparse.ArgumentParser(description='generate akn xml for a bill')
