@@ -45,7 +45,8 @@ def generate_akn(tree):
     bill = E('bill')
     root.append(bill)
     bill.append(generate_meta(tree))
-    bill.append(generate_coverpage(tree))
+    bill.append(parse_section(tree, 'form', 'preface'))
+    bill.append(parse_section(tree, '', 'body'))
     bill.append(generate_preamble(tree))
     etree.tostring(root, pretty_print=True)
     return root
@@ -241,9 +242,9 @@ def get_committees(tree):
         committees.append(committee_element)
     return committees
 
-##################################
-# Methods to Generate Cover Page #
-##################################
+###############################
+# Methods to Generate Preface #
+###############################
 ''' 
     <distribution-code display="yes">IB</distribution-code>
     <calendar display="yes">Union Calendar No. 18</calendar>
@@ -253,20 +254,10 @@ def get_committees(tree):
     <associated-doc role="report" display="yes">[Report No. 113&#x2013;30]</associated-doc>
     <current-chamber display="yes">IN THE HOUSE OF REPRESENTATIVES</current-chamber>
 '''
-def generate_coverpage(tree):
+def generate_preface(tree):
+    
     form = tree.find('.//form')
-    coverpage = E('coverPage')
-    '''
-    for child in form.findall('.//*'):
-        if child.text and not child.get('display')=="no":
-            print etree.tostring(child), child.text
-            if child.tag == 'legis-num':
-                p = E('p')
-                p.append(E('docNumber', child.text))
-                coverpage.append(p)
-            else:
-                coverpage.append(E('p', child.text))
-                '''
+    preface = E('preface')
     for child in form:
         p = E('p', '')
         if child.text and not child.get('display')=='no':
@@ -274,9 +265,27 @@ def generate_coverpage(tree):
             p = translate_element(child, p)
         for rec_child in child.findall('.//*'):
             p = translate_element(rec_child, p)
-        coverpage.append(p)
+        preface.append(p)
 
-    return coverpage
+    return preface
+    
+
+
+def parse_section(tree, top_tag, akn_tag):
+    portion = tree.find('.//'+top_tag)
+    print './/'+top_tag
+    print portion
+    akn_tag = E(akn_tag)
+    for child in portion:
+        p = E('p', '')
+        if child.text and not child.get('display')=='no':
+            #do first order checks
+            p = translate_element(child, p)
+        for rec_child in child.findall('.//*'):
+            p = translate_element(rec_child, p)
+        akn_tag.append(p)
+    return akn_tag
+
 
 def translate_element(element,parent):
     if element.tag == 'legis-num':
@@ -293,15 +302,16 @@ def translate_element(element,parent):
         parent.append(element)
     elif element.tag == 'official-title':
         element.tag = 'title'
+        for attrib in element.attrib:
+            element.attrib.pop(attrib)
+        parent.append(element)
+    elif element.tag == 'legis-type':
+        element.tag = 'docType'
         parent.append(element)
     else:
         parent.text = element.text
         parent.tail = element.tail
     return parent
-
-###############################
-# Methods to Generate Preface #
-###############################
 
 
 ################################
@@ -320,6 +330,10 @@ def generate_container(tree):
 ############################
 # Methods to Generate Body #
 ############################
+
+def generate_body(tree):
+    body_element = E('body')
+
 
 def set_up_parser():
     parser = argparse.ArgumentParser(description='generate akn xml for a bill')
