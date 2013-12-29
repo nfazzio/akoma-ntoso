@@ -41,12 +41,13 @@ def get_tree_from_url(url):
 
 def generate_akn(tree):
     """Take in an lxml tree and returns xml fitting akomaNtoso standards"""
-    root = E('akomaNtosos', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
-    root.append(generate_meta(tree))
-    '''
-    root.append(generate_coverpage(tree))
-    '''
-    root.append(generate_preamble(tree))
+    root = E('akomaNtoso', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
+    bill = E('bill')
+    root.append(bill)
+    bill.append(generate_meta(tree))
+    bill.append(generate_coverpage(tree))
+    bill.append(generate_preamble(tree))
+    etree.tostring(root, pretty_print=True)
     return root
 
 ############################
@@ -239,6 +240,64 @@ def get_committees(tree):
         committee_element = E('TLCOrganization', id=committee_id, href=ontology_path, showas=committee_name)
         committees.append(committee_element)
     return committees
+
+##################################
+# Methods to Generate Cover Page #
+##################################
+''' 
+    <distribution-code display="yes">IB</distribution-code>
+    <calendar display="yes">Union Calendar No. 18</calendar>
+    <congress display="yes">113th CONGRESS</congress>
+    <session display="yes">1st Session</session>
+    <legis-num>H. R. 1120</legis-num>
+    <associated-doc role="report" display="yes">[Report No. 113&#x2013;30]</associated-doc>
+    <current-chamber display="yes">IN THE HOUSE OF REPRESENTATIVES</current-chamber>
+'''
+def generate_coverpage(tree):
+    form = tree.find('.//form')
+    coverpage = E('coverPage')
+    '''
+    for child in form.findall('.//*'):
+        if child.text and not child.get('display')=="no":
+            print etree.tostring(child), child.text
+            if child.tag == 'legis-num':
+                p = E('p')
+                p.append(E('docNumber', child.text))
+                coverpage.append(p)
+            else:
+                coverpage.append(E('p', child.text))
+                '''
+    for child in form:
+        p = E('p', '')
+        if child.text and not child.get('display')=='no':
+            #do first order checks
+            p = translate_element(child, p)
+        for rec_child in child.findall('.//*'):
+            p = translate_element(rec_child, p)
+        coverpage.append(p)
+
+    return coverpage
+
+def translate_element(element,parent):
+    if element.tag == 'legis-num':
+        element.tag = 'docNumber'
+        parent.append(element)
+    elif element.tag in('sponsor', 'cosponsor'):
+        element.attrib['id'] = element.attrib.pop('name-id')
+        element.tag = 'person'
+        parent.append(element)
+    elif element.tag == 'session':
+        parent.append(element)
+    elif element.tag == 'associated-doc':
+        element.tag = 'doc'
+        parent.append(element)
+    elif element.tag == 'official-title':
+        element.tag = 'title'
+        parent.append(element)
+    else:
+        parent.text = element.text
+        parent.tail = element.tail
+    return parent
 
 ###############################
 # Methods to Generate Preface #
