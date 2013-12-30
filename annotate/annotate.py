@@ -45,10 +45,17 @@ def generate_akn(tree):
     bill = E('bill')
     root.append(bill)
     bill.append(generate_meta(tree))
+    '''
     for tag in parse_section(tree, 'form', 'preface'):
         bill.append(tag)
     for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", 'body'):
         bill.append(tag)
+    '''
+    for tag in parse_section(tree, 'form'):
+        bill.append(tag)
+    for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']"):
+        bill.append(tag)
+
     bill.append(generate_preamble(tree))
     etree.tostring(root, pretty_print=True)
     return root
@@ -272,73 +279,61 @@ def generate_preface(tree):
     return preface
     
 
-
-def parse_section(tree, top_tag, akn_tag):
-    #portion = tree.find('.//'+top_tag)
-    segments_to_parse = tree.xpath(".//"+top_tag)
-    akn_tags =[]
-
+def parse_section(tree, old_tag):
+    translations = []
+    segments_to_parse = tree.xpath('.//'+old_tag)
     for segment in segments_to_parse:
-        tag = E(akn_tag)
-        for child in segment:
-            p = E('p', '')
-            if child.text and not child.get('display')=='no':
-                #do first order checks
-                p = translate_element(child, p)
-                #classify all recursive grandchildren
-            for rec_child in child.findall('.//*'):
-                p = translate_element(rec_child, p)
-            tag.append(p)
-        akn_tags.append(tag)
-    return akn_tags
+        segment = translate_element(segment)
+        for element in segment.xpath('.//*'):
+            translate_element(element)
+        translations.append(segment)
+    return translations
 
 
-def translate_element(element,parent):
+def translate_element(element):
     if element.tag == 'legis-num':
         element.tag = 'docNumber'
-        parent.append(element)
+    elif element.tag == 'legis-body':
+        element.tag = 'body'
+        if element.get('changed'):
+            element.attrib['status'] = element.attrib.pop('changed')
     elif element.tag in('sponsor', 'cosponsor'):
         element.attrib['id'] = element.attrib.pop('name-id')
         element.tag = 'person'
-        parent.append(element)
-    elif element.tag == 'session':
-        parent.append(element)
+    elif element.tag =='text':
+        element.tag = 'p'
     elif element.tag == 'associated-doc':
         element.tag = 'doc'
-        parent.append(element)
     elif element.tag == 'official-title':
         element.tag = 'title'
         for attrib in element.attrib:
             element.attrib.pop(attrib)
-        parent.append(element)
     elif element.tag == 'legis-type':
         element.tag = 'docType'
-        parent.append(element)
     elif element.tag == 'section':
-        element.attrib.pop('section-type')
-        parent.append(element)
+        if element.get('section-type'):
+            element.attrib.pop('section-type')
     elif element.tag == 'enum':
         element.tag = 'num'
-        parent.append(element)
-    elif element.tag == 'title':
-        parent.append(element)
     elif element.tag == 'external-xref':
         element.tag = 'ref'
         element.attrib['href']=element.attrib.pop('parsable-cite')
-        parent.append(element)
     elif element.tag == 'paragraph':
         element.tag = 'p'
-        parent.append(element)
     elif element.tag == 'short-title':
         element.tag = 'shortTitle'
-        parent.append(element)
+    elif element.tag == 'section':
+        element.attib.pop
+    elif element.tag == 'session':
+        element.attrib.pop('display')
+    elif element.tag == 'current-chamber':
+        element.attrib.pop('display')
     elif element.tag == 'header':
-        parent.append(element)
-    else:
-        parent.text = element.text
-        parent.tail = element.tail
-    return parent
+        pass
 
+    else:
+        element.tag = ('TODO'+element.tag)
+    return element
 
 ################################
 # Methods to Generate Preamble #
