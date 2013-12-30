@@ -314,6 +314,26 @@ def translate_element(element,parent):
     elif element.tag == 'legis-type':
         element.tag = 'docType'
         parent.append(element)
+    elif element.tag == 'section':
+        element.attrib.pop('section-type')
+        parent.append(element)
+    elif element.tag == 'enum':
+        element.tag = 'num'
+        parent.append(element)
+    elif element.tag == 'title':
+        parent.append(element)
+    elif element.tag == 'external-xref':
+        element.tag = 'ref'
+        element.attrib['href']=element.attrib.pop('parsable-cite')
+        parent.append(element)
+    elif element.tag == 'paragraph':
+        element.tag = 'p'
+        parent.append(element)
+    elif element.tag == 'short-title':
+        element.tag = 'shortTitle'
+        parent.append(element)
+    elif element.tag == 'header':
+        parent.append(element)
     else:
         parent.text = element.text
         parent.tail = element.tail
