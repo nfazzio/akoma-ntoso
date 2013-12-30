@@ -45,8 +45,10 @@ def generate_akn(tree):
     bill = E('bill')
     root.append(bill)
     bill.append(generate_meta(tree))
-    bill.append(parse_section(tree, 'form', 'preface'))
-    bill.append(parse_section(tree, '', 'body'))
+    for tag in parse_section(tree, 'form', 'preface'):
+        bill.append(tag)
+    for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", 'body'):
+        bill.append(tag)
     bill.append(generate_preamble(tree))
     etree.tostring(root, pretty_print=True)
     return root
@@ -272,19 +274,23 @@ def generate_preface(tree):
 
 
 def parse_section(tree, top_tag, akn_tag):
-    portion = tree.find('.//'+top_tag)
-    print './/'+top_tag
-    print portion
-    akn_tag = E(akn_tag)
-    for child in portion:
-        p = E('p', '')
-        if child.text and not child.get('display')=='no':
-            #do first order checks
-            p = translate_element(child, p)
-        for rec_child in child.findall('.//*'):
-            p = translate_element(rec_child, p)
-        akn_tag.append(p)
-    return akn_tag
+    #portion = tree.find('.//'+top_tag)
+    segments_to_parse = tree.xpath(".//"+top_tag)
+    akn_tags =[]
+
+    for segment in segments_to_parse:
+        tag = E(akn_tag)
+        for child in segment:
+            p = E('p', '')
+            if child.text and not child.get('display')=='no':
+                #do first order checks
+                p = translate_element(child, p)
+                #classify all recursive grandchildren
+            for rec_child in child.findall('.//*'):
+                p = translate_element(rec_child, p)
+            tag.append(p)
+        akn_tags.append(tag)
+    return akn_tags
 
 
 def translate_element(element,parent):
