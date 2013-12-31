@@ -2,25 +2,34 @@ from lxml import etree
 from lxml.builder import E
 import urllib2
 import re
-from os import path
 import argparse
 import sys
 import string
 import requests
 import time
+import json
 
 api_url='http://congress.api.sunlightfoundation.com/bills?'
 api_key= open('api_key.txt').read().rstrip()
-bill_id = ("hr4310-112")
+#bill_id = ("hr4310-112")
 
 def main(argv):
-    bill_id = argv
-    url = "http://www.gpo.gov/fdsys/pkg/BILLS-113hr1120rh/xml/BILLS-113hr1120rh.xml"
+    url = argv
+    print url
+    print 'argv'+argv
+    bill_id = bill_id_from_url(argv)
+    print "HERE"+bill_id
+    #url = "http://www.gpo.gov/fdsys/pkg/BILLS-113hr1120rh/xml/BILLS-113hr1120rh.xml"
     
     source_tree = get_tree_from_url(url)
     
-    akn_tree = generate_akn(source_tree)
+    akn_tree = generate_akn(source_tree, bill_id)
     print etree.tostring(akn_tree, pretty_print=True)
+
+def bill_id_from_url(url):
+    match = re.search('BILLS-(\d*)(hr)(\d*)',url)
+    bill_id = match.group(2)+match.group(3)+'-'+match.group(1)
+    return bill_id
 
 def get_sunlight(parameters,bill_id):
     """Takes in a bill_id and a list of desired fields to return from the Sunlight Foundation API, and returns them"""
@@ -39,21 +48,16 @@ def get_tree_from_url(url):
     print etree.tostring(tree, pretty_print=True)
     return tree
 
-def generate_akn(tree):
+def generate_akn(tree, bill_id):
     """Take in an lxml tree and returns xml fitting akomaNtoso standards"""
     root = E('akomaNtoso', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
     bill = E('bill')
     root.append(bill)
-    bill.append(generate_meta(tree))
-    '''
-    for tag in parse_section(tree, 'form', 'preface'):
+    bill.append(generate_meta(tree, bill_id))
+    translations = json.loads(open('translations.json').read())
+    for tag in parse_section(tree, 'form', translations):
         bill.append(tag)
-    for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", 'body'):
-        bill.append(tag)
-    '''
-    for tag in parse_section(tree, 'form'):
-        bill.append(tag)
-    for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']"):
+    for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", translations):
         bill.append(tag)
 
     bill.append(generate_preamble(tree))
@@ -64,32 +68,32 @@ def generate_akn(tree):
 # Methods to Generate Meta #
 ############################
 
-def generate_meta(tree):
+def generate_meta(tree, bill_id):
     """Generates the meta portion of the xml"""
     meta = E("meta")
     
-    meta.append(generate_identification(tree))
-    meta.append(generate_publication(tree))
-    meta.append(generate_lifecycle(tree))
+    meta.append(generate_identification(tree, bill_id))
+    meta.append(generate_publication(tree, bill_id))
+    meta.append(generate_lifecycle(tree, bill_id))
     meta.append(generate_analysis(tree))
 
     meta.append(generate_references(tree))
     return meta
     
 
-def generate_identification(tree):
+def generate_identification(tree, bill_id):
     """Generates the identification portion of the meta"""
     identification = E("identification")
-    identification.append(generate_frbr_work(tree))
+    identification.append(generate_frbr_work(tree, bill_id))
     #for element in generate_frbr_work(tree):
     #   identification.append(element)
     
-    identification.append(generate_frbr_expression(tree))
-    identification.append(generate_frbr_manifestation(tree))
+    identification.append(generate_frbr_expression(tree, bill_id))
+    identification.append(generate_frbr_manifestation(tree, bill_id))
     return identification
 
 
-def generate_frbr_work(tree):
+def generate_frbr_work(tree, bill_id):
     """Generates the FRBRWork portion of the identification"""
     #ontology path = /country/state/item(bill)/date/bill#
     '''
@@ -124,7 +128,7 @@ def get_bill_number(tree):
     return bill_num
 '''
 
-def generate_frbr_expression(tree):
+def generate_frbr_expression(tree, bill_id):
     """Generates the FRBRExpression portion of the identification"""
     '''
     EXAMPLE:
@@ -148,7 +152,7 @@ def generate_frbr_expression(tree):
     return frbr_expression
 
 
-def generate_frbr_manifestation(tree):
+def generate_frbr_manifestation(tree, bill_id):
 
     '''
     <FRBRthis value="/us/california/bill/2010-12-06/4/eng@/main.xml"/>
@@ -179,7 +183,7 @@ def generate_references(tree):
     return references
 
 
-def generate_publication(tree):
+def generate_publication(tree, bill_id):
     id = 'publication'
     date = get_sunlight('last_version_on', bill_id)['results'][0]['last_version_on']
     name = 'http://www.gpo.gov'
@@ -187,17 +191,17 @@ def generate_publication(tree):
     return publication_element
 
 
-def generate_lifecycle(tree):
+def generate_lifecycle(tree, bill_id):
     source = "nick_fazzio"
     lifecycle_element = E("lifecycle", source=source)
-    lifecycle_element.append(generate_eventRef(tree))
+    lifecycle_element.append(generate_eventRef(tree, bill_id))
     return lifecycle_element
         
 
-def generate_eventRef(tree):
+def generate_eventRef(tree, bill_id):
     action_date = time.strftime("%Y-%m-%d")
     source = "nick_fazzio"
-    refers = generate_frbr_manifestation(tree).getchildren()[1].get('value')
+    refers = generate_frbr_manifestation(tree, bill_id).getchildren()[1].get('value')
     eventref_element = E('eventRef', date=action_date, source=source, refers=refers)
     return eventref_element
 
@@ -264,7 +268,7 @@ def get_committees(tree):
     <current-chamber display="yes">IN THE HOUSE OF REPRESENTATIVES</current-chamber>
 '''
 def generate_preface(tree):
-    
+    """Generates the preface"""
     form = tree.find('.//form')
     preface = E('preface')
     for child in form:
@@ -279,61 +283,39 @@ def generate_preface(tree):
     return preface
     
 
-def parse_section(tree, old_tag):
-    translations = []
+def parse_section(tree, old_tag, translations):
+    """Parses a section of the text to akn tag for tag"""
+    translated_sections = []
     segments_to_parse = tree.xpath('.//'+old_tag)
     for segment in segments_to_parse:
-        segment = translate_element(segment)
+        segment = translate_element(segment, translations)
         for element in segment.xpath('.//*'):
-            translate_element(element)
-        translations.append(segment)
-    return translations
+            translate_element(element, translations)
+        translated_sections.append(segment)
+    return translated_sections
 
-
-def translate_element(element):
-    if element.tag == 'legis-num':
-        element.tag = 'docNumber'
-    elif element.tag == 'legis-body':
-        element.tag = 'body'
-        if element.get('changed'):
-            element.attrib['status'] = element.attrib.pop('changed')
-    elif element.tag in('sponsor', 'cosponsor'):
-        element.attrib['id'] = element.attrib.pop('name-id')
-        element.tag = 'person'
-    elif element.tag =='text':
-        element.tag = 'p'
-    elif element.tag == 'associated-doc':
-        element.tag = 'doc'
-    elif element.tag == 'official-title':
-        element.tag = 'title'
-        for attrib in element.attrib:
-            element.attrib.pop(attrib)
-    elif element.tag == 'legis-type':
-        element.tag = 'docType'
-    elif element.tag == 'section':
-        if element.get('section-type'):
-            element.attrib.pop('section-type')
-    elif element.tag == 'enum':
-        element.tag = 'num'
-    elif element.tag == 'external-xref':
-        element.tag = 'ref'
-        element.attrib['href']=element.attrib.pop('parsable-cite')
-    elif element.tag == 'paragraph':
-        element.tag = 'p'
-    elif element.tag == 'short-title':
-        element.tag = 'shortTitle'
-    elif element.tag == 'section':
-        element.attib.pop
-    elif element.tag == 'session':
-        element.attrib.pop('display')
-    elif element.tag == 'current-chamber':
-        element.attrib.pop('display')
-    elif element.tag == 'header':
-        pass
-
+def translate_element(element,translations):
+    """Uses a json doc as a dictionary to translate a tag and its attributes to meet akn standards"""
+    if element.tag in translations.keys():
+        update_attributes(element, translations)
     else:
-        element.tag = ('TODO'+element.tag)
+        element.tag = 'TODO'+element.tag
     return element
+
+def update_attributes(element, translations):
+    """This is a helper method of translate_element. It handles translating attributes and adding new ones."""
+    old_tag = element.tag
+    element.tag = translations[element.tag]['new_tag']
+    for old_attrib in element.attrib:
+        if old_attrib in translations[old_tag]['attrib_translations'].keys():
+            new_attrib = translations[old_tag]['attrib_translations'][old_attrib]
+            element.attrib[new_attrib] = element.attrib.pop(old_attrib)
+        else:
+            element.attrib.pop(old_attrib)
+    for attrib_key,attrib_value in translations[old_tag]['new_attribs'].iteritems():
+        element.attrib[attrib_key] = attrib_value
+    return element
+
 
 ################################
 # Methods to Generate Preamble #
@@ -362,5 +344,5 @@ def set_up_parser():
     return bill
 
 if __name__ == "__main__":
-    main(sys.argv[0])
+    main(sys.argv[1])
 
