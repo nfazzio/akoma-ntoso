@@ -15,16 +15,15 @@ api_key= open('api_key.txt').read().rstrip()
 
 def main(argv):
     url = argv
-    print url
-    print 'argv'+argv
     bill_id = bill_id_from_url(argv)
-    print "HERE"+bill_id
-    #url = "http://www.gpo.gov/fdsys/pkg/BILLS-113hr1120rh/xml/BILLS-113hr1120rh.xml"
     
     source_tree = get_tree_from_url(url)
     
     akn_tree = generate_akn(source_tree, bill_id)
-    print etree.tostring(akn_tree, pretty_print=True)
+
+    f = open('akn_'+bill_id, 'w')
+    f.write(etree.tostring(akn_tree, pretty_print=True))
+    #print etree.tostring(akn_tree, pretty_print=True)
 
 def bill_id_from_url(url):
     match = re.search('BILLS-(\d*)(hr)(\d*)',url)
@@ -45,16 +44,19 @@ def get_tree_from_url(url):
     xml = urllib2.urlopen(url)
     parser = etree.XMLParser(remove_blank_text=True)
     tree = etree.parse(xml, parser)
-    print etree.tostring(tree, pretty_print=True)
+    #print etree.tostring(tree, pretty_print=True)
     return tree
 
 def generate_akn(tree, bill_id):
     """Take in an lxml tree and returns xml fitting akomaNtoso standards"""
     root = E('akomaNtoso', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
-    bill = E('bill')
+    bill = E(get_doc_type(tree))
+
     root.append(bill)
     bill.append(generate_meta(tree, bill_id))
-    translations = json.loads(open('translations.json').read())
+    with open('translations.json') as f:
+        translations = json.loads(f.read())
+    #translations = json.loads(open('translations.json').read())
     for tag in parse_section(tree, 'form', translations):
         bill.append(tag)
     for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", translations):
@@ -64,6 +66,14 @@ def generate_akn(tree, bill_id):
     etree.tostring(root, pretty_print=True)
     return root
 
+def get_doc_type(tree):
+    if tree.getroot().tag == 'amendment-doc':
+        bill = 'amendment'
+    elif tree.getroot().tag == 'bill':
+        bill = 'bill'
+    else:
+        bill = 'error'
+    return bill
 ############################
 # Methods to Generate Meta #
 ############################
@@ -106,7 +116,7 @@ def generate_frbr_work(tree, bill_id):
    '''
     country = 'us'
     state = 'house'
-    item = 'bill'
+    item = get_doc_type(tree)
     #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
     date_introduced = get_sunlight('introduced_on', bill_id)['results'][0]['introduced_on']
     frbr_work = E("FRBRWork")
@@ -140,7 +150,7 @@ def generate_frbr_expression(tree, bill_id):
     '''
     country = 'us'
     state = 'house'
-    item = 'bill'
+    item = get_doc_type(tree)
     #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
     last_version = get_sunlight('last_version_on', bill_id)['results'][0]['last_version_on']
     frbr_expression = E("FRBRExpression")
@@ -162,7 +172,7 @@ def generate_frbr_manifestation(tree, bill_id):
     '''
     country = 'us'
     state = 'house'
-    item = 'bill'
+    item = get_doc_type(tree)
     #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
     date_accessed = time.strftime("%Y-%m-%d")
     frbr_manifestation = E("FRBRmanifestation")
@@ -182,6 +192,42 @@ def generate_references(tree):
         references.append(committee)
     return references
 
+def get_sponsor(tree):
+    """Returns an etree element containing TLCPerson tag with sponsor information"""
+    sponsor = tree.find('.//sponsor')
+    if sponsor is not None:
+        sponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<sponsor>[a-zA-Z]*)', sponsor.text).group('sponsor')
+        ontology_path = '/ontology/person/akn/' + sponsor_name
+        sponsor_id = sponsor.get('name-id')
+    else:
+        sponsor_name = "#name"
+        ontology_path = '/ontology/person/akn/' + sponsor_name
+        sponsor_id = "#id"
+    sponsor_element = E('TLCPerson', id=sponsor_id, href=ontology_path, showas=sponsor_name)
+    return sponsor_element
+
+def get_cosponsors(tree):
+    """Returns a list of etree elements with containing TLCPerson tag with co sponsor information"""
+    cosponsors = []
+    cosponsor_matches = tree.findall('.//cosponsor')
+    for cosponsor_match in cosponsor_matches:
+        cosponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<cosponsor>[a-zA-Z]*)', cosponsor_match.text).group('cosponsor')
+        ontology_path = '/ontology/person/akn/' + cosponsor_name
+        cosponsor_id = cosponsor_match.get('name-id')
+        cosponsor_element = E('TLCPerson', id=cosponsor_id, href=ontology_path, showas=cosponsor_name)
+        cosponsors.append(cosponsor_element)
+    return cosponsors
+
+def get_committees(tree):
+    committees = []
+    committee_matches = tree.findall('.//committee-name')
+    for committee in committee_matches:
+        committee_name = committee.text
+        committee_id = committee.get('committee-id')
+        ontology_path = '/ontology/organization/akn/' + committee_name.replace(' ', '_')
+        committee_element = E('TLCOrganization', id=committee_id, href=ontology_path, showas=committee_name)
+        committees.append(committee_element)
+    return committees
 
 def generate_publication(tree, bill_id):
     id = 'publication'
@@ -223,38 +269,6 @@ def generate_textual_mod(tree, type):
     textual_mod_element = E("textualMod",type=type)
     return textual_mod_element
 
-def get_sponsor(tree):
-    """Returns an etree element containing TLCPerson tag with sponsor information"""
-    sponsor = tree.find('.//sponsor')
-    sponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<sponsor>[a-zA-Z]*)', sponsor.text).group('sponsor')
-    ontology_path = '/ontology/person/akn/' + sponsor_name
-    sponsor_id = sponsor.get('name-id')
-    sponsor_element = E('TLCPerson', id=sponsor_id, href=ontology_path, showas=sponsor_name)
-    return sponsor_element
-
-def get_cosponsors(tree):
-    """Returns a list of etree elements with containing TLCPerson tag with co sponsor information"""
-    cosponsors = []
-    cosponsor_matches = tree.findall('.//cosponsor')
-    for cosponsor_match in cosponsor_matches:
-        cosponsor_name = re.search('(Mr.|Mrs.|Ms.)? (?P<cosponsor>[a-zA-Z]*)', cosponsor_match.text).group('cosponsor')
-        ontology_path = '/ontology/person/akn/' + cosponsor_name
-        cosponsor_id = cosponsor_match.get('name-id')
-        cosponsor_element = E('TLCPerson', id=cosponsor_id, href=ontology_path, showas=cosponsor_name)
-        cosponsors.append(cosponsor_element)
-    return cosponsors
-
-def get_committees(tree):
-    committees = []
-    committee_matches = tree.findall('.//committee-name')
-    for committee in committee_matches:
-        committee_name = committee.text
-        committee_id = committee.get('committee-id')
-        ontology_path = '/ontology/organization/akn/' + committee_name.replace(' ', '_')
-        committee_element = E('TLCOrganization', id=committee_id, href=ontology_path, showas=committee_name)
-        committees.append(committee_element)
-    return committees
-
 ###############################
 # Methods to Generate Preface #
 ###############################
@@ -288,6 +302,7 @@ def parse_section(tree, old_tag, translations):
     translated_sections = []
     segments_to_parse = tree.xpath('.//'+old_tag)
     for segment in segments_to_parse:
+        print segment.tag
         segment = translate_element(segment, translations)
         for element in segment.xpath('.//*'):
             translate_element(element, translations)

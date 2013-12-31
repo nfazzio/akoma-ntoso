@@ -1,0 +1,310 @@
+{
+    "legis-num": {
+        "new_tag": "docNumber",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "legis-body": {
+        "new_tag": "body",
+        "attrib_translations": {
+            "changed":"status" 
+        },
+        "new_attribs": {}
+    },
+    "sponsor": {
+        "new_tag": "person",
+        "attrib_translations": {
+            "name-id":"id" 
+        },
+        "new_attribs": {}
+    },
+    "cosponsor": {
+        "new_tag": "person",
+        "attrib_translations": {
+            "name-id":"id" 
+        },
+        "new_attribs": {}
+    },
+    "text": {
+        "new_tag": "p",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "associated-doc": {
+        "new_tag": "doc",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "official-title": {
+        "new_tag": "title",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "legis-type": {
+        "new_tag": "doc-type",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "section": {
+        "new-tag":"section",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "enum": {
+        "new_tag": "num",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "external-xref": {
+        "new_tag": "ref",
+        "attrib_translations": {
+            "parsable-cite":"href"
+        } ,
+        "new_attribs": {}
+    },
+    "paragraph": {
+        "new_tag": "p",
+        "attrib_translations": {
+            "id":"id"
+        },
+        "new_attribs": {}
+    },
+    "short-title": {
+        "new_tag": "shortTitle",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "section": {
+        "new_tag": "section",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "session": {
+        "new_tag": "session",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "header": {
+        "new_tag": "header",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "form": {
+        "new_tag": "preface",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "quote": {
+        "new_tag": "quote",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "italic": {
+        "new_tag": "textualMod",
+        "attrib_translations": {},
+        "new_attribs": 
+            {"TextualMods":"italic"}
+    },
+    "action": {
+        "new_tag": "block",
+        "attrib_translations": {
+            "date":"date"
+            },
+        "new_attribs": {}
+    },
+    "congress": {
+        "new_tag": "legislature",
+        "attrib_translations": {
+            "date":"date"
+            },
+        "new_attribs": {}
+    },
+    "pagebreak": {
+        "new_tag": "br",
+        "attrib_translations": {
+            "date":"date"
+            },
+        "new_attribs": {}
+    },
+    "committee-name": {
+        "new_tag": "organization",
+        "attrib_translations": {
+            "committee-id":"id",
+            "added-display-style":"style"
+            },
+        "new_attribs": {}
+    },
+    "action": {
+        "new_tag": "other",
+        "attrib_translations": {
+            "date":"date"
+            },
+        "new_attribs": {}
+    },
+    "calendar": {
+        "new_tag": "period",
+        "attrib_translations": {
+            "date":"date"
+            },
+        "new_attribs": {}
+    },
+    "engrossed-amendment-body": {
+        "new_tag": "amendment-body",
+        "attrib_translations": {
+            },
+        "new_attribs": {}
+    },
+    "amendment": {
+        "new_tag": "amendment",
+        "attrib_translations": {
+            },
+        "new_attribs": {}
+    },
+    "amendment-block": {
+        "new_tag": "amendmentBlock",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "continuation-text": {
+        "new_tag": "text",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "amendment-instruction": {
+        "new_tag": "amendmentContent",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "appropriations-major": {
+        "new_tag": "amendmentHeading",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {
+            "style":"major"
+        }
+    },
+    "appropriations-intermediate": {
+        "new_tag": "amendmentHeading",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {
+            "style":"intermediate"
+        }
+    },
+    "appropriations-small": {
+        "new_tag": "amendmentContent",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "title": {
+        "new_tag": "amendmentTitle",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "subsection": {
+        "new_tag": "subsection",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "quoted-block": {
+        "new_tag": "quote",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "subparagraph": {
+        "new_tag": "subparagraph",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "action-date": {
+        "new_tag": "date",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "proviso": {
+        "new_tag": "formula",
+        "attrib_translations": {},
+        "new_attribs": {
+            "refersTo":"proviso"
+        }
+    },
+    "term": {
+        "new_tag": "term",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "clause": {
+        "new_tag": "clause",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "subclause": {
+        "new_tag": "subclause",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "after-quoted-block": {
+        "new_tag": "text",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "header-in-text": {
+        "new_tag": "textualMod",
+        "attrib_translations": {
+            "TextualMods":"header-in-text"
+            },
+        "new_attribs": {}
+    },
+    "item": {
+        "new_tag": "item",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "OLD_TAG": {
+        "new_tag": "date",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "OLD_TAG": {
+        "new_tag": "date",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "OLD_TAG": {
+        "new_tag": "date",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "old_tag2": {
+        "new_tag": "tag_name",
+        "attrib_translations": {
+            "old_na,me":"new_name"
+        },
+        "new_attribs": {}
+    },
+    "OLD_TAG_NAME": {
+        "new_tag": "NEW_TAG_NAME",
+        "attrib_translations": {
+            "OLD_ATTRIB_NAME":"NEW_ATTRIB_NAME"
+            },
+        "new_attribs": {
+            "NEW_ATTRIB_VALUE":"NEW_ATTRIB_KEY"
+        }
+    }
+}
