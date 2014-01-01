@@ -8,6 +8,7 @@ import string
 import requests
 import time
 import json
+import os
 
 api_url='http://congress.api.sunlightfoundation.com/bills?'
 api_key= open('api_key.txt').read().rstrip()
@@ -16,17 +17,15 @@ api_key= open('api_key.txt').read().rstrip()
 def main(argv):
     url = argv
     bill_id = bill_id_from_url(argv)
-    
     source_tree = get_tree_from_url(url)
-    
     akn_tree = generate_akn(source_tree, bill_id)
-
-    f = open('akn_'+bill_id, 'w')
+    f = open(os.path.join(os.getcwd(),'annotated_docs','us','akn_'+bill_id+'.xml'), 'w+')
     f.write(etree.tostring(akn_tree, pretty_print=True))
     #print etree.tostring(akn_tree, pretty_print=True)
 
 def bill_id_from_url(url):
-    match = re.search('BILLS-(\d*)(hr)(\d*)',url)
+    """Returns a bill id from a URL"""
+    match = re.search('BILLS-(\d*)([a-z]*)(\d*)',url)
     bill_id = match.group(2)+match.group(3)+'-'+match.group(1)
     return bill_id
 
@@ -54,7 +53,7 @@ def generate_akn(tree, bill_id):
 
     root.append(bill)
     bill.append(generate_meta(tree, bill_id))
-    with open('translations.json') as f:
+    with open('translations_us.json') as f:
         translations = json.loads(f.read())
     #translations = json.loads(open('translations.json').read())
     for tag in parse_section(tree, 'form', translations):
@@ -62,7 +61,6 @@ def generate_akn(tree, bill_id):
     for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", translations):
         bill.append(tag)
 
-    bill.append(generate_preamble(tree))
     etree.tostring(root, pretty_print=True)
     return root
 
@@ -72,7 +70,7 @@ def get_doc_type(tree):
     elif tree.getroot().tag == 'bill':
         bill = 'bill'
     else:
-        bill = 'error'
+        bill = 'bill'
     return bill
 ############################
 # Methods to Generate Meta #
@@ -296,13 +294,11 @@ def generate_preface(tree):
 
     return preface
     
-
 def parse_section(tree, old_tag, translations):
     """Parses a section of the text to akn tag for tag"""
     translated_sections = []
     segments_to_parse = tree.xpath('.//'+old_tag)
     for segment in segments_to_parse:
-        print segment.tag
         segment = translate_element(segment, translations)
         for element in segment.xpath('.//*'):
             translate_element(element, translations)

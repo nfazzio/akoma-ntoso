@@ -1,79 +1,82 @@
-from lxml import etree
+from lxml import etree, objectify
 from lxml.builder import E
 import urllib2
 import re
 import argparse
 import sys
 import string
-import requests
 import time
 import json
+import os
 
-api_url='http://congress.api.sunlightfoundation.com/bills?'
-api_key= open('api_key.txt').read().rstrip()
-#bill_id = ("hr4310-112")
 
 def main(argv):
     url = argv
     bill_id = bill_id_from_url(argv)
-    
     source_tree = get_tree_from_url(url)
-    
     akn_tree = generate_akn(source_tree, bill_id)
-
-    f = open('akn_'+bill_id, 'w')
+    f = open(os.path.join(os.getcwd(),'annotated_docs','uk','akn_'+bill_id+'.xml'), 'w+')
     f.write(etree.tostring(akn_tree, pretty_print=True))
     #print etree.tostring(akn_tree, pretty_print=True)
 
 def bill_id_from_url(url):
-    match = re.search('BILLS-(\d*)(hr)(\d*)',url)
-    bill_id = match.group(2)+match.group(3)+'-'+match.group(1)
+    """Returns a bill id from a URL"""
+    match = re.search('(h[a-z]+)(\d+)([a-z]+)',url)
+    bill_id = match.group()
     return bill_id
-
-def get_sunlight(parameters,bill_id):
-    """Takes in a bill_id and a list of desired fields to return from the Sunlight Foundation API, and returns them"""
-    url = 'http://congress.api.sunlightfoundation.com/bills'
-    header = {'X-APIKEY':api_key}
-    fields = {'fields':parameters, 'bill_id':bill_id}
-    json_response = requests.request('get', url, headers=header, data=fields).json()
-
-    return json_response
 
 def get_tree_from_url(url):
     """Returns an lxml tree from a url"""
     xml = urllib2.urlopen(url)
     parser = etree.XMLParser(remove_blank_text=True)
     tree = etree.parse(xml, parser)
-    #print etree.tostring(tree, pretty_print=True)
+
+    root = tree.getroot()
+
+    for element in root.iter():
+        if re.match('<\?.*?\?>',etree.tostring(element)):
+            if str(element.tag) == "<built-in function ProcessingInstruction>":
+                tag_name = re.search('\?(.*?)\?',etree.tostring(element)).group(1)
+                tag_text = re.search('>(.*)',etree.tostring(element)).group(1)
+                new_element = E(tag_name,tag_text)
+                element = new_element
+    root = dropns(root)
     return tree
+
+def dropns(root):
+    """Removes pesky namespaces from uk xml for easier formatting"""
+    for elem in root.iter():
+        print elem.tag
+
+        if str(elem.tag) in ("<built-in function ProcessingInstruction>","<built-in function Comment>"):
+            pass
+        elif re.search('\{.*?\}', elem.tag):
+            elem.tag = re.sub('\{.*?\}', '', elem.tag)
+    return root
 
 def generate_akn(tree, bill_id):
     """Take in an lxml tree and returns xml fitting akomaNtoso standards"""
     root = E('akomaNtoso', xmlns='http://akomantoso.googlecode.com/svn/release/trunk/schema/akomantoso30.xsd')
     bill = E(get_doc_type(tree))
-
     root.append(bill)
     bill.append(generate_meta(tree, bill_id))
-    with open('translations.json') as f:
+
+    with open('translations_uk.json') as f:
         translations = json.loads(f.read())
-    #translations = json.loads(open('translations.json').read())
-    for tag in parse_section(tree, 'form', translations):
+    for tag in parse_section(tree, 'Contents', translations):
         bill.append(tag)
-    for tag in parse_section(tree, "*[substring(name(), string-length(name()) - 4) = '-body']", translations):
+    for tag in parse_section(tree, "Primary", translations):
         bill.append(tag)
 
     bill.append(generate_preamble(tree))
-    etree.tostring(root, pretty_print=True)
+    print etree.tostring(root, pretty_print=True)
     return root
 
 def get_doc_type(tree):
-    if tree.getroot().tag == 'amendment-doc':
-        bill = 'amendment'
-    elif tree.getroot().tag == 'bill':
-        bill = 'bill'
-    else:
-        bill = 'error'
-    return bill
+    """returns the doc type of the xml. This is used to choose the correct body tag for the AKN"""
+    """I'm less familiar with UK code, so I am defaulting to 'bill'"""
+    return 'bill'
+
 ############################
 # Methods to Generate Meta #
 ############################
@@ -81,12 +84,10 @@ def get_doc_type(tree):
 def generate_meta(tree, bill_id):
     """Generates the meta portion of the xml"""
     meta = E("meta")
-    
     meta.append(generate_identification(tree, bill_id))
     meta.append(generate_publication(tree, bill_id))
     meta.append(generate_lifecycle(tree, bill_id))
     meta.append(generate_analysis(tree))
-
     meta.append(generate_references(tree))
     return meta
     
@@ -95,9 +96,6 @@ def generate_identification(tree, bill_id):
     """Generates the identification portion of the meta"""
     identification = E("identification")
     identification.append(generate_frbr_work(tree, bill_id))
-    #for element in generate_frbr_work(tree):
-    #   identification.append(element)
-    
     identification.append(generate_frbr_expression(tree, bill_id))
     identification.append(generate_frbr_manifestation(tree, bill_id))
     return identification
@@ -105,7 +103,6 @@ def generate_identification(tree, bill_id):
 
 def generate_frbr_work(tree, bill_id):
     """Generates the FRBRWork portion of the identification"""
-    #ontology path = /country/state/item(bill)/date/bill#
     '''
     EXAMPLE:
     <FRBRthis value="/us/california/bill/2010-12-06/4/main"/>
@@ -114,11 +111,11 @@ def generate_frbr_work(tree, bill_id):
     <FRBRauthor href="#assembly" as="#author"/>
     <FRBRcountry value="us"/>
    '''
-    country = 'us'
-    state = 'house'
+    country = 'uk'
+    state = 'parliament'
     item = get_doc_type(tree)
-    #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
-    date_introduced = get_sunlight('introduced_on', bill_id)['results'][0]['introduced_on']
+    # Date used is published date, since I do not have access to more relevent dates.
+    date_introduced = tree.xpath('.//date')[0].text
     frbr_work = E("FRBRWork")
     frbr_work.append(E("FRBRthis", value=string.join([country, state, item, date_introduced, bill_id, 'main'],"/")))
     frbr_work.append(E("FRBRuri", value=string.join([country, state, item, date_introduced, bill_id],"/")))
@@ -126,17 +123,6 @@ def generate_frbr_work(tree, bill_id):
     frbr_work.append(E("FRBRauthor", author=get_sponsor(tree).get("id")))
     frbr_work.append(E("FRBRcountry", value=country))
     return frbr_work
-
-'''
-def get_bill_number(tree):
-    """returns the bill's number"""
-    #TODO legis-num
-    bill_num = tree.find('.//legis-num').text
-    bill_num = re.match('\d*',bill_num).group()
-    print "bill_num: " + bill_num
-
-    return bill_num
-'''
 
 def generate_frbr_expression(tree, bill_id):
     """Generates the FRBRExpression portion of the identification"""
@@ -148,11 +134,11 @@ def generate_frbr_expression(tree, bill_id):
     <FRBRauthor href="#somebody" as="#editor"/>
     <FRBRlanguage language="eng"/>
     '''
-    country = 'us'
-    state = 'house'
+    country = 'uk'
+    state = 'parliament'
     item = get_doc_type(tree)
-    #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
-    last_version = get_sunlight('last_version_on', bill_id)['results'][0]['last_version_on']
+    # Date used is published date, since I do not have access to more relevent dates.
+    last_version = tree.xpath('.//date')[0].text
     frbr_expression = E("FRBRExpression")
     frbr_expression.append(E("FRBRthis", value=string.join([country, state, item, last_version, bill_id, 'eng@', 'main'],"/")))
     frbr_expression.append(E("FRBRuri", value=string.join([country, state, item, last_version, bill_id, 'eng@'],"/")))
@@ -165,15 +151,16 @@ def generate_frbr_expression(tree, bill_id):
 def generate_frbr_manifestation(tree, bill_id):
 
     '''
+    EXAMPLE:
     <FRBRthis value="/us/california/bill/2010-12-06/4/eng@/main.xml"/>
     <FRBRuri value="/us/california/bill/2010-12-06/4/eng@/main.akn"/>
     <FRBRdate date="2010-12-06" name="XML-markup"/>
     <FRBRauthor href="#somebody" as="#editor"/>
     '''
-    country = 'us'
-    state = 'house'
+    country = 'uk'
+    state = 'parliament'
     item = get_doc_type(tree)
-    #The "introduced on" date represents the original work's date, and is appropriate for using FRBR standards.
+    #The "introduced on" date represents the date of generation, and is appropriate for using FRBR standards.
     date_accessed = time.strftime("%Y-%m-%d")
     frbr_manifestation = E("FRBRmanifestation")
     frbr_manifestation.append(E("FRBRthis", value=string.join([country, state, item, date_accessed, bill_id, 'eng@', 'main.xml'],"/")))
@@ -219,6 +206,7 @@ def get_cosponsors(tree):
     return cosponsors
 
 def get_committees(tree):
+    """Returns a list of committees from the xml"""
     committees = []
     committee_matches = tree.findall('.//committee-name')
     for committee in committee_matches:
@@ -230,14 +218,16 @@ def get_committees(tree):
     return committees
 
 def generate_publication(tree, bill_id):
+    """Generated publication element from the xml"""
     id = 'publication'
-    date = get_sunlight('last_version_on', bill_id)['results'][0]['last_version_on']
-    name = 'http://www.gpo.gov'
+    date = tree.xpath('.//date')[0].text
+    name = 'http://data.parliament.uk'
     publication_element = E('publication', date=date, name=name)
     return publication_element
 
 
 def generate_lifecycle(tree, bill_id):
+    """Generates lifecycle from the xml"""
     source = "nick_fazzio"
     lifecycle_element = E("lifecycle", source=source)
     lifecycle_element.append(generate_eventRef(tree, bill_id))
@@ -245,6 +235,7 @@ def generate_lifecycle(tree, bill_id):
         
 
 def generate_eventRef(tree, bill_id):
+    """Generates the eventRef portion of the lifecycle"""
     action_date = time.strftime("%Y-%m-%d")
     source = "nick_fazzio"
     refers = generate_frbr_manifestation(tree, bill_id).getchildren()[1].get('value')
@@ -252,12 +243,14 @@ def generate_eventRef(tree, bill_id):
     return eventref_element
 
 def generate_analysis(tree):
+    """Generates the analysis. This is pretty limited in function"""
     source = "nick_fazzio"
     analysis_element = E("analysis", source=source)
     analysis_element.append(generate_active_modification(tree))
     return analysis_element
 
 def generate_active_modification(tree):
+    """Generates an active_modification element to be used in the analysis"""
     active_modification_element = E("activeModification")
     if tree.xpath("//*[@changed='deleted']"):
         active_modification_element.append(generate_textual_mod(tree, 'deletion'))
@@ -266,6 +259,7 @@ def generate_active_modification(tree):
     return active_modification_element
 
 def generate_textual_mod(tree, type):
+    """Generates a textual_mod element to be used in active_modification elements"""
     textual_mod_element = E("textualMod",type=type)
     return textual_mod_element
 
@@ -295,14 +289,12 @@ def generate_preface(tree):
         preface.append(p)
 
     return preface
-    
 
 def parse_section(tree, old_tag, translations):
     """Parses a section of the text to akn tag for tag"""
     translated_sections = []
     segments_to_parse = tree.xpath('.//'+old_tag)
     for segment in segments_to_parse:
-        print segment.tag
         segment = translate_element(segment, translations)
         for element in segment.xpath('.//*'):
             translate_element(element, translations)
@@ -314,7 +306,7 @@ def translate_element(element,translations):
     if element.tag in translations.keys():
         update_attributes(element, translations)
     else:
-        element.tag = 'TODO'+element.tag
+        element.tag = element.tag+'TODO'
     return element
 
 def update_attributes(element, translations):

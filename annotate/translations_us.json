@@ -150,14 +150,12 @@
     },
     "engrossed-amendment-body": {
         "new_tag": "amendment-body",
-        "attrib_translations": {
-            },
+        "attrib_translations": {},
         "new_attribs": {}
     },
     "amendment": {
         "new_tag": "amendment",
-        "attrib_translations": {
-            },
+        "attrib_translations": {},
         "new_attribs": {}
     },
     "amendment-block": {
@@ -274,6 +272,123 @@
         "attrib_translations": {
             "id":"id"
             },
+        "new_attribs": {}
+    },
+    "toc": {
+        "new_tag": "container",
+        "attrib_translations": {
+            "id":"table-of-contents"
+            },
+        "new_attribs": {}
+    },
+    "toc-entry": {
+        "new_tag": "block",
+        "attrib_translations": {
+            "id":"idref",
+            "style":"level"
+            },
+        "new_attribs": {}
+    },
+    "division": {
+        "new_tag": "division",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "subtitle": {
+        "new_tag": "subtitle",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "enum-in-header": {
+        "new_tag": "num",
+        "attrib_translations": {
+            "style":"enum-in-header"
+            },
+        "new_attribs": {}
+    },
+    "chapter": {
+        "new_tag": "chapter",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "multi-column-toc-entry": {
+        "new_tag": "block",
+        "attrib_translations": {
+            "style":"level"
+            },
+        "new_attribs": {}
+    },
+    "toc-enum": {
+        "new_tag": "num",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "level-header": {
+        "new_tag": "header",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "target": {
+        "new_tag": "number",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "internal-xref": {
+        "new_tag": "ref",
+        "attrib_translations": {
+            "id":"idref",
+            "href":"legis-path"
+            },
+        "new_attribs": {}
+    },
+    "quoted-block-continuation-text": {
+        "new_tag": "quote",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "part": {
+        "new_tag": "date",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "bold": {
+        "new_tag": "textualMod",
+        "attrib_translations": {},
+        "new_attribs": {
+            "TextualMods":"bold"
+        }
+    },
+    "table": {
+        "new_tag": "table",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "ttitle": {
+        "new_tag": "caption",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "row": {
+        "new_tag": "tr",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "entry": {
+        "new_tag": "tr",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "linebreak": {
+        "new_tag": "br",
+        "attrib_translations": {},
         "new_attribs": {}
     },
     "OLD_TAG": {

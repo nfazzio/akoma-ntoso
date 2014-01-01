@@ -1,0 +1,143 @@
+{
+    "Contents": {
+        "new_tag": "coverPage",
+        "attrib_translations": {
+            
+            },
+        "new_attribs": {}
+    },
+    "ContentsTitle": {
+        "new_tag": "Title",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "ContentsItem": {
+        "new_tag": "item",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "Primary": {
+        "new_tag": "preface",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "Title": {
+        "new_tag": "title",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "Number": {
+        "new_tag": "number",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "Para": {
+        "new_tag": "p",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "Text": {
+        "new_tag": "text",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "EnactingText": {
+        "new_tag": "p",
+        "attrib_translations": {},
+        "new_attribs": {
+            "style":"enacting"
+        }
+    },
+    "P1group": {
+        "new_tag": "container",
+        "attrib_translations": {
+            "id":"id"
+            },
+        "new_attribs": {}
+    },
+    "ContentsNumber": {
+        "new_tag": "number",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "LongTitle": {
+        "new_tag": "title",
+        "attrib_translations": {
+            "style":"long"
+            },
+        "new_attribs": {}
+    },
+    "ListItem": {
+        "new_tag": "item",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "P1para": {
+        "new_tag": "p",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "Body": {
+        "new_tag": "body",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "Pnumber": {
+        "new_tag": "number",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "P2": {
+        "new_tag": "container",
+        "attrib_translations": {},
+        "new_attribs": {
+            "name":"2"
+        }
+    },
+    "P1": {
+        "new_tag": "container",
+        "attrib_translations": {
+            "name":"1"
+            },
+        "new_attribs": {}
+    },
+    "P2para": {
+        "new_tag": "p",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "P3": {
+        "new_tag": "containter",
+        "attrib_translations": {
+            "name":"3"
+            },
+        "new_attribs": {}
+    },
+    "P3para": {
+        "new_tag": "p",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "td": {
+        "new_tag": "td",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "th": {
+        "new_tag": "th",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "tr": {
+        "new_tag": "tr",
+        "attrib_translations": {},
+        "new_attribs": {}
+    },
+    "OLD_TAG": {
+        "new_tag": "date",
+        "attrib_translations": {},
+        "new_attribs": {}
+    }
+}
